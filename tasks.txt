@@ -1,0 +1,150 @@
+const express = require('express')
+const app = express()
+const server = require('http').createServer(app)
+const io = require('socket.io')(server)
+const bodyParser = require('body-parser')
+
+const { ExpressPeerServer } = require('peer');
+const peerServer = ExpressPeerServer(server, {
+  debug: true
+});
+
+app.use('/peerjs', peerServer); 
+
+app.set("view engine", "ejs")
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }))
+
+let name = '' // defining "name" in the global scope
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html')
+})
+
+app.get('/room', (req, res) => {
+  name = req.query.name
+  res.redirect(`/room/${req.query.room}`)
+})
+
+app.get('/room/:room', (req, res) => {
+  res.render('room', { roomId: req.params.room, Myname: name })
+})
+
+io.on('connection', socket => {
+  socket.on('join-room', (roomId, userId) => {
+    socket.join(roomId)
+    socket.to(roomId).broadcast.emit('user-connected', userId)
+
+    socket.on('disconnect', () => {
+      socket.to(roomId).broadcast.emit('user-disconnected', userId)
+    })
+  })
+})
+
+server.listen(3000)
+
+////////////////////////////
+
+const express = require('express')
+const app = express()
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+const { v4: uuidV4 } = require('uuid')
+
+app.set('view engine', 'ejs')
+app.use(express.static('public'))
+
+app.get('/', (req, res) => {
+  res.redirect(`/${uuidV4()}`)
+})
+
+app.get('/:room', (req, res) => {
+  res.render('room', { roomId: req.params.room })
+})
+
+// Define a listener for the "connection" event
+io.on("connection", (socket) => {
+
+  // Define a listener for the "join-room" event
+  socket.on("join-room", (roomId, userId) => {
+
+    // Join the specified room
+    socket.join(roomId);
+
+    // Emit a "user-connected" event to all clients in the room (except the sender)
+    socket.to(roomId).emit("user-connected", userId);
+
+    // Define a listener for the "disconnect" event
+    socket.on("disconnect", () => {
+
+      // Emit a "user-disconnected" event to all clients in the room (except the sender)
+      socket.to(roomId).emit("user-disconnected", userId);
+
+    });
+
+  });
+
+});
+
+server.listen(3000)
+
+
+////////////////////////////////////////////////////////
+const express = require('express')
+const app = express()
+const server = require('http').createServer(app)
+const io = require('socket.io')(server)
+const bodyParser = require('body-parser')
+
+const { ExpressPeerServer } = require('peer');
+const peerServer = ExpressPeerServer(server, {
+  debug: true
+});
+
+app.use('/peerjs', peerServer); 
+
+app.set("view engine", "ejs")
+app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }))
+
+let name = '' // defining "name" in the global scope
+
+let id = Math.round(Math.random()* 100000000 +1)
+
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html')
+})
+
+app.get('/room', (req, res) => {
+  name = req.query.name
+  res.redirect(`/room/${req.query.room}`)
+})
+
+app.get('/room/:room', (req, res) => {
+  res.render('room', { roomId: req.params.room, Myname: name })
+})
+
+io.on("connection", (socket) => {
+
+  // Define a listener for the "join-room" event
+  socket.on("join-room", (roomId, userId) => {
+
+    // Join the specified room
+    socket.join(roomId);
+
+    // Emit a "user-connected" event to all clients in the room (except the sender)
+    socket.to(roomId).emit("user-connected", userId);
+
+    // Define a listener for the "disconnect" event
+    socket.on("disconnect", () => {
+
+      // Emit a "user-disconnected" event to all clients in the room (except the sender)
+      socket.to(roomId).emit("user-disconnected", userId);
+
+    });
+
+  });
+
+});
+
+server.listen(3000)
